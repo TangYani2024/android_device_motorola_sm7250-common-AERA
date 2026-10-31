@@ -1,0 +1,43 @@
+# init.recovery.qcom.rc for Motorola racer (lito/sm7250).
+# Adapted from the sm84xx-common tree's init.recovery.qcom.rc.
+# The qcom_decrypt import comes from device/qcom/twrp-common, which is
+# part of the AERA manifest (it starts qseecomd + the keymaster/keymint
+# HALs needed for FBE decryption). The wifi import is intentionally left
+# out until the WLAN modules are ready (see TODO-7).
+
+import /init.recovery.qcom_decrypt.rc
+
+on init
+    start boot-hal-1-2
+
+on fs
+    # Racer's UFS host controller (LOS fstab.qcom sysfs_path):
+    # /sys/devices/platform/soc/1d84000.ufshc
+    wait /dev/block/platform/soc/1d84000.ufshc
+    symlink /dev/block/platform/soc/1d84000.ufshc /dev/block/bootdevice
+    write /proc/sys/kernel/firmware_config/force_sysfs_fallback 1
+
+on boot
+    setprop sys.usb.config adb
+
+on property:twrp.modules.loaded=true
+    # Mount firmware
+    mkdir /firmware
+    # TODO-verify: on racer the modem partition is ext4 (LOS fstab mounts
+    # it at /vendor/firmware_mnt as ext4), not vfat as on sm84xx devices.
+    # If this mount fails in recovery, change vfat -> ext4 here.
+    mount ext4 /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /firmware ro
+    # Load ADSP firmware for PMIC
+    wait /sys/kernel/boot_adsp/boot
+    write /sys/kernel/boot_adsp/boot 1
+    wait /sys/class/power_supply/battery
+    # Health HAL: VERIFIED 2026-10-31 — racer's service is
+    # vendor.health-default (/vendor/bin/hw/android.hardware.
+    # health-service.qti, class hal). It is NOT started here: the
+    # binary lives on the vendor partition and is not bundled in the
+    # recovery image, and AERA_USE_LEGACY_BATTERY_SERVICES is set, so
+    # battery state comes from /sys/class/power_supply/battery
+    # (waited on above) instead. If battery reporting is wrong in
+    # recovery, revisit by pulling the health binary + libs into
+    # the recovery root and adding `start vendor.health-default`.
+    umount /firmware

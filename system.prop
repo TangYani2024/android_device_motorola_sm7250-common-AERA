@@ -1,0 +1,3 @@
+# Shipping API levels (LOS common.mk)
+# BOARD_SHIPPING_API_LEVEL := 30, PRODUCT_SHIPPING_API_LEVEL := 29
+ro.vendor.api_level=30
