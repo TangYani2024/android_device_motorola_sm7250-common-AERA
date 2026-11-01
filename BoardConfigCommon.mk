@@ -48,8 +48,9 @@ BOARD_KERNEL_SEPARATED_DTBO := true
 BOARD_INCLUDE_DTB_IN_BOOTIMG := true
 BOARD_INCLUDE_RECOVERY_DTBO := true
 # Prebuilt kernel (device tree provides kernel/dtb/dtbo); the kernel
-# itself is not built from source in a recovery build.
-BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
+# itself is not built from source in a recovery build. Note: do NOT set
+# BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE on Boot Header v2 devices —
+# racer's recovery.img must contain the kernel, cmdline, dtb, and dtbo.
 BOARD_KERNEL_IMAGE_NAME := kernel
 BOARD_RAMDISK_USE_LZ4 := true
 
@@ -91,19 +92,38 @@ TARGET_RECOVERY_FSTAB := $(COMMON_PATH)/recovery.fstab
 # The device tree overrides TARGET_RECOVERY_FSTAB to its own fstab;
 # both files are kept in sync (same content, see device tree).
 
-# Decryption support modules (sm84xx-common pattern; TODO-2: the
-# keymint/keymaster .so names must be verified against the LOS vendor).
+# Rules
+BUILD_BROKEN_DUP_RULES := true
+BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
+BUILD_BROKEN_NINJA_USES_ENV_VARS += RTIC_MPGEN
+BUILD_BROKEN_NINJA_USES_ENV_VARS += SDCLANG_AE_CONFIG SDCLANG_CONFIG SDCLANG_SA_ENABLE
+BUILD_BROKEN_USES_BUILD_HOST_SHARED_LIBRARY := true
+BUILD_BROKEN_USES_BUILD_HOST_STATIC_LIBRARY := true
+BUILD_BROKEN_USES_BUILD_HOST_EXECUTABLE := true
+BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
+
+# Decryption & recovery support modules (sm84xx-common pattern)
 TARGET_RECOVERY_DEVICE_MODULES += \
     android.hidl.allocator@1.0 \
     android.hidl.memory@1.0 \
     android.hidl.memory.token@1.0 \
     libdmabufheap \
+    libexpat \
     libhidlmemory \
     libion \
     libnetutils \
-    vendor.display.config@1.0 \
-    vendor.display.config@2.0 \
     libdebuggerd_client
+
+RECOVERY_LIBRARY_SOURCE_FILES += \
+    $(TARGET_OUT_SHARED_LIBRARIES)/android.hidl.allocator@1.0.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/android.hidl.memory@1.0.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/android.hidl.memory.token@1.0.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libdmabufheap.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libexpat.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libhidlmemory.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libion.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libnetutils.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libdebuggerd_client.so
 
 # Use mke2fs to create ext4 images
 TARGET_USES_MKE2FS := true
@@ -111,6 +131,42 @@ TARGET_USES_MKE2FS := true
 # AVB (LOS: enabled; recovery builds sign with test keys by default)
 BOARD_AVB_ENABLE := true
 BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 3
+BOARD_AVB_RECOVERY_KEY_PATH := external/avb/test/data/testkey_rsa4096.pem
+BOARD_AVB_RECOVERY_ALGORITHM := SHA256_RSA4096
+BOARD_AVB_RECOVERY_ROLLBACK_INDEX := 1
+BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION := 1
+
+# Encryption
+BOARD_USES_QCOM_FBE_DECRYPTION := true
+PLATFORM_VERSION := 99.87.36
+PLATFORM_VERSION_LAST_STABLE := $(PLATFORM_VERSION)
+PLATFORM_SECURITY_PATCH := 2099-12-31
+VENDOR_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
+
+# AERA recovery configuration
+TARGET_RECOVERY_QCOM_RTC_FIX := true
+AERA_THEME := portrait_hdpi
+AERA_EXCLUDE_APEX := true
+AERA_EXCLUDE_DEFAULT_USB_INIT := true
+AERA_EXTRA_LANGUAGES := true
+AERA_INCLUDE_CRYPTO := true
+AERA_INCLUDE_CRYPTO_FBE := true
+AERA_INCLUDE_FBE_METADATA_DECRYPT := true
+AERA_USE_FSCRYPT_POLICY := 2
+AERA_NO_EXFAT_FUSE := true
+AERA_INCLUDE_NTFS_3G := true
+AERA_INCLUDE_RESETPROP := true
+AERA_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
+AERA_OVERRIDE_SYSTEM_PROPS := \
+    "ro.build.fingerprint=ro.vendor.build.fingerprint;ro.build.version.incremental"
+
+# TWRP Debug Flags
+TARGET_USES_LOGD := true
+AERA_INCLUDE_LOGCAT := true
+TARGET_RECOVERY_DEVICE_MODULES += debuggerd
+RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/debuggerd
+TARGET_RECOVERY_DEVICE_MODULES += strace
+RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/strace
 
 # WiFi (LOS)
 BOARD_WLAN_DEVICE := qcwcn
