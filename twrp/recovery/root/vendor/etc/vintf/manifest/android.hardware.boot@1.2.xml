@@ -1,0 +1,10 @@
+<!--
+    VINTF manifest fragment declaring the boot control HAL for recovery.
+-->
+<manifest version="1.0" type="device">
+    <hal format="hidl">
+        <name>android.hardware.boot</name>
+        <transport>hwbinder</transport>
+        <fqname>@1.2::IBootControl/default</fqname>
+    </hal>
+</manifest>
