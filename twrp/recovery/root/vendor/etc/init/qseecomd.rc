@@ -3,10 +3,10 @@
 # Confidential and Proprietary - Qualcomm Technologies, Inc.
 
 on init
-    wait /dev/qseecom
     start vendor.qseecomd
 
 service vendor.qseecomd /system/bin/qseecomd
     class core
     user root
     group root
+    seclabel u:r:recovery:s0
