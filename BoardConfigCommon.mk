@@ -52,7 +52,11 @@ BOARD_INCLUDE_RECOVERY_DTBO := true
 # BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE on Boot Header v2 devices —
 # racer's recovery.img must contain the kernel, cmdline, dtb, and dtbo.
 BOARD_KERNEL_IMAGE_NAME := kernel
-BOARD_RAMDISK_USE_LZ4 := true
+# Ramdisk compression: build default (gzip). Do NOT set BOARD_RAMDISK_USE_LZ4
+# here: the prebuilt stock kernel's IKCONFIG (extracted and verified
+# 2026-11-03) has CONFIG_RD_GZIP=y and CONFIG_RD_LZMA=y, but RD_LZ4 is NOT
+# set, so an LZ4 ramdisk cannot be unpacked by this kernel. The LOS tree
+# value assumes a source-built kernel; it does not apply to the stock one.
 
 # Partition Info (LOS)
 BOARD_FLASH_BLOCK_SIZE := 262144 # (BOARD_KERNEL_PAGESIZE * 64)
